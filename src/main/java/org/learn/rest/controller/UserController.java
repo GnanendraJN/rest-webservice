@@ -1,0 +1,92 @@
+package org.learn.rest.controller;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.learn.rest.dto.UserDto;
+import org.learn.rest.exception.ResourceNotFoundException;
+import org.learn.rest.service.UserService;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@Tag(
+        name = "CRUD REST APIs for User Resource",
+        description = "CRUD REST APIs for User Resource"
+)
+@RestController
+@RequestMapping("api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Operation(
+            summary = "Get User By Id"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "HTTP Status 200 CREATED"
+    )
+    @GetMapping("{id}")
+    public UserDto getUserById(@PathVariable int id){
+        UserDto userDto = userService.getUserById(id).orElseThrow(
+                () -> new ResourceNotFoundException("User", "id", String.valueOf(id))
+        );
+
+        return userDto;
+    }
+
+    @GetMapping
+    public Optional<List<UserDto>> getUsers(){
+        return userService.getUsers();
+    }
+
+    @PostMapping
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDto){
+
+        UserDto user = userService.createUser(userDto);
+
+        UserDto savedUser = modelMapper.map(user, UserDto.class);
+        return new ResponseEntity<>(savedUser, HttpStatus.OK);
+    }
+
+    @PutMapping("/{id}")
+    public UserDto updateUser(@Valid @RequestBody UserDto userDto, @PathVariable int id ){
+
+        userDto.setId(id);
+        UserDto updatedUser = userService.updateUser(userDto);
+
+        return updatedUser;
+    }
+
+    @DeleteMapping("{id}")
+    public void deleteUser(@PathVariable int id){
+        userService.getUserById(id).orElseThrow(
+                () -> new ResourceNotFoundException("User", "id", String.valueOf(id))
+        );
+
+        userService.deleteUserById(id);
+    }
+
+    /*@ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorDetails> handleResourceNotFoundException(ResourceNotFoundException exception,
+                                                                        WebRequest webRequest){
+        ErrorDetails errorDetails = new ErrorDetails(
+                LocalDateTime.now(),
+                exception.getMessage(),
+                webRequest.getDescription(false),
+                "USER_NOT_FOUND"
+        );
+
+        return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
+    }*/
+}
